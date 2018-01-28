@@ -48,6 +48,11 @@ private:
 
     // This hack sucks - but it's the only real way to get the output log of the build command to the completion/failure handler
     QProcess *BuildProcess;
+
+    bool bIsBuilding = false;
+
+    QString BuildTarget;
+
 };
 
 #endif // MAINWINDOW_H

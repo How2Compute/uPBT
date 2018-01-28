@@ -34,6 +34,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
         i++;
     }
+
+
 }
 
 QList<UnrealInstall> MainWindow::GetEngineInstalls()
@@ -159,7 +161,7 @@ void MainWindow::BuildPlugin(QString PluginPath)
     RunUATFlags << "-Plugin=" + PluginPath;
 
     // Get or create a path where to package the plugin
-    QDir PackageLocation = QDir("D:/PluginBuilds/testing_qt/plugin");// TODO QStandardPaths::standardLocations(QStandardPaths::DataLocation)[0] + "/BuiltPlugins/" + selectedPlugin.GetName() + "-" + SelectedUnrealInstallation.GetName();
+    QDir PackageLocation = QDir(BuildTarget);
 
     if (!PackageLocation.exists())
     {
@@ -196,45 +198,40 @@ bool MainWindow::on_PluginBuild_complete(int exitCode, QProcess::ExitStatus exit
     if (exitStatus == QProcess::NormalExit && exitCode == 0)
     {
 #ifdef QT_DEBUG
-        qDebug() << "Successfully Built Plugin Binaries.";
+        qDebug() << "Successfully Built Plugin.";
 #endif
+        // We have successfully build the plugin!
+        ui->progressBar->setValue(100);
+
+        // Create a dialog telling the user the plugin was successfully compiles/built.
+        QMessageBox BuildSucceededDialog;
+        BuildSucceededDialog.setWindowTitle("Succeeded!");
+        BuildSucceededDialog.setTextFormat(Qt::RichText);
+        BuildSucceededDialog.setText(QString("We successfully built that plugin! Output: <a href=\"file://%1\">%1</a>").arg(BuildTarget));
+        BuildSucceededDialog.setStandardButtons(QMessageBox::Ok);
+        BuildSucceededDialog.exec();
     }
     else
     {
 #ifdef QT_DEBUG
-        qDebug() << "Finished Building Plugin Binaries, But Failed. Output Log:";
-        //qDebug() <<  QString(p.readAll()); TODO find a way to still report this
+        qDebug() << "Finished Building Plugin Binaries, But Failed.";
 #endif
 
+        // Changing the progress bar's state -> color is not the right thing to do with an error, so reset it to 0 and show an error dialog.
+        ui->progressBar->setValue(0);
+
+        // Create an error dialog that tells the user about the error that has happened (includes the output log).
         BuildErrorDialog dialog(this, OutputLog);
         dialog.setModal(true);
         dialog.exec();
-
-        // If not, ask the user whether or not they want to rebuild it
-        QMessageBox BuildFailedPrompt;
-        BuildFailedPrompt.setWindowTitle("Failed To Build Plugin Binaries");
-        BuildFailedPrompt.setText("There Was An Issue Building Your Plugin's Binaries. Would You Still Like To Continue On With The Installation?");
-        BuildFailedPrompt.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
-
-        int UserResponse = BuildFailedPrompt.exec();
-
-        // Which button did the user press?
-        switch (UserResponse)
-        {
-            case QMessageBox::Ok:
-                break;
-            case QMessageBox::Cancel:
-                // Reset the progress bar & return so the rest doesn't get executed
-                ui->progressBar->setEnabled(false);
-                ui->progressBar->setValue(0);
-                return false;
-                break;
-        }
     }
 
-    ui->progressBar->setValue(75);
+    // Reset everything!
+    ui->progressBar->setValue(0);
+    BuildProcess->deleteLater();
+    bIsBuilding = false;
 
-    return false;
+    return true;
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
@@ -264,7 +261,7 @@ void MainWindow::dropEvent(QDropEvent *event)
 {
     qDebug() << "Going to build plugin @ " << event->mimeData()->urls().at(0).toLocalFile() << "...";
 
-    if (BuildProcess && !BuildProcess->atEnd())
+    if (bIsBuilding)
     {
         // There is still a build process going on - can't build!
         // TODO a handler/dialog to tell the user about this.
@@ -273,6 +270,7 @@ void MainWindow::dropEvent(QDropEvent *event)
     {
         // Attempt to build the plugin!
         event->acceptProposedAction();
+        bIsBuilding = true;
         BuildPlugin(event->mimeData()->urls().at(0).toLocalFile());
     }
 }
