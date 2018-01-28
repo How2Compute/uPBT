@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         // Use the default
         /// NOTE: Format: "/BuiltPlugins/<pluginName>/<pluginVersion>/<engine_version>"
-        BuildTargetFormat = QStandardPaths::standardLocations(QStandardPaths::DataLocation)[0] + "/BuiltPlugins/%1/%2/%3";
+        BuildTargetFormat = QStandardPaths::standardLocations(QStandardPaths::DataLocation)[0] + "/BuiltPlugins/%n/%v/%e";
     }
 }
 
@@ -168,6 +168,54 @@ QList<UnrealInstall> MainWindow::GetEngineInstalls()
 
 void MainWindow::BuildPlugin(QString PluginPath)
 {
+    QFile PluginMeta(PluginPath);
+
+    // Open the plugin to extract it's (friendly) name & version (name).
+    /// NOTE: The above may be incorrect - however, this is how I believe most plugins do versioning & naming, and it is how I do it personally. Please open an issue if this causes huge issues for you!
+    if (!PluginMeta.open(QFile::ReadOnly | QFile::Text))
+    {
+#ifdef QT_DEBUG
+        qDebug() << "Error Opening UPlugin File to Generate Path & Build Plugin!";
+#endif
+        // Reset
+        bIsBuilding = false;
+        ui->progressBar->setValue(0);
+        return;
+    }
+
+    // Parse the uplugin file as a JSON document so we can easily extract the required information
+    QTextStream PluginMetaTS(&PluginMeta);
+    QString PluginMetaString = PluginMetaTS.readAll();
+    QJsonObject jPlugin = QJsonDocument::fromJson(PluginMetaString.toUtf8()).object();
+
+    // Extract the plugin's name and version
+    QString PluginName = jPlugin["FriendlyName"].toString();
+    QString PluginVersion = jPlugin["VersionName"].toString();
+
+    // Grab the engine's name for easy usage while formatting too
+    QString EngineVersion = SelectedUnrealInstallation.GetName();
+
+    // Copy over the format string so we can format it based on the plugin/selected engine.
+    BuildTarget = BuildTargetFormat;
+
+    // Replace the %n format specifier with the plugin's name if applicable
+    if (BuildTargetFormat.contains("%n"))
+    {
+        BuildTarget.replace("%n", PluginName);
+    }
+
+    // Replace the %v format specifier with the plugin's version if applicable
+    if (BuildTargetFormat.contains("%v"))
+    {
+        BuildTarget.replace("%v", PluginVersion);
+    }
+
+    // Replace the %e format specifier with the engine's name (usually version) if applicable
+    if (BuildTargetFormat.contains("%e"))
+    {
+        BuildTarget.replace("%e", EngineVersion);
+    }
+
     QString RunUATPath = SelectedUnrealInstallation.GetPath() + "/Engine/Build/BatchFiles/RunUAT.bat";
     QStringList RunUATFlags;
     RunUATFlags << "BuildPlugin";
@@ -229,14 +277,22 @@ bool MainWindow::on_PluginBuild_complete(int exitCode, QProcess::ExitStatus exit
 #ifdef QT_DEBUG
         qDebug() << "Finished Building Plugin Binaries, But Failed.";
 #endif
+        // This could be hit if the application is being shut down - so check if the UI window is still valid to avoid issues like segfaults.
+        if (ui)
+        {
+            // Changing the progress bar's state -> color is not the right thing to do with an error, so reset it to 0 and show an error dialog.
+            ui->progressBar->setValue(0);
 
-        // Changing the progress bar's state -> color is not the right thing to do with an error, so reset it to 0 and show an error dialog.
-        ui->progressBar->setValue(0);
-
-        // Create an error dialog that tells the user about the error that has happened (includes the output log).
-        BuildErrorDialog dialog(this, OutputLog);
-        dialog.setModal(true);
-        dialog.exec();
+            // Create an error dialog that tells the user about the error that has happened (includes the output log).
+            BuildErrorDialog dialog(this, OutputLog);
+            dialog.setModal(true);
+            dialog.exec();
+        }
+        else
+        {
+            // Be sure to just return as quickly as possible to avoid any potential issues - don't need to clean up as it's shutting down anyway and GC will do the job for us.
+            return false;
+        }
     }
 
     // Reset everything!
