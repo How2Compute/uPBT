@@ -15,6 +15,8 @@
 #include <QProcess>
 #include <QMessageBox>
 
+#include "builderrordialog.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -203,6 +205,10 @@ bool MainWindow::on_PluginBuild_complete(int exitCode, QProcess::ExitStatus exit
         qDebug() << "Finished Building Plugin Binaries, But Failed. Output Log:";
         //qDebug() <<  QString(p.readAll()); TODO find a way to still report this
 #endif
+
+        BuildErrorDialog dialog(this, OutputLog);
+        dialog.setModal(true);
+        dialog.exec();
 
         // If not, ask the user whether or not they want to rebuild it
         QMessageBox BuildFailedPrompt;

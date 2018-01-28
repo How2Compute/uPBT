@@ -26,11 +26,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    unrealinstall.cpp
+    unrealinstall.cpp \
+    builderrordialog.cpp
 
 HEADERS += \
         mainwindow.h \
-    unrealinstall.h
+    unrealinstall.h \
+    builderrordialog.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    builderrordialog.ui
