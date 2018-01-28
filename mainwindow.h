@@ -51,6 +51,10 @@ private:
 
     bool bIsBuilding = false;
 
+    // The format string (either default or read from config) to use when deciding where to build a plugin to.
+    QString BuildTargetFormat;
+
+    // The directory into which the currently building plugin is being built.
     QString BuildTarget;
 
 };

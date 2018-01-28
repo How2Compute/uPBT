@@ -36,6 +36,19 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
 
+    // Open up uPBT's settings file
+    QSettings Settings("HowToCompute", "uPBT");
+    if (Settings.contains("PluginBuildPathFormat"))
+    {
+        // A custom variation has been set up  - use that one instead.
+        BuildTargetFormat = Settings.value("PluginBuildPathFormat").toString();
+    }
+    else
+    {
+        // Use the default
+        /// NOTE: Format: "/BuiltPlugins/<pluginName>/<pluginVersion>/<engine_version>"
+        BuildTargetFormat = QStandardPaths::standardLocations(QStandardPaths::DataLocation)[0] + "/BuiltPlugins/%1/%2/%3";
+    }
 }
 
 QList<UnrealInstall> MainWindow::GetEngineInstalls()
