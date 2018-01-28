@@ -10,6 +10,8 @@
 #include <QDragMoveEvent>
 #include <QDropEvent>
 
+#include <QProcess>
+
 #include "unrealinstall.h"
 
 namespace Ui {
@@ -36,9 +38,16 @@ private:
 
     QList<UnrealInstall> GetEngineInstalls();
 
+    void BuildPlugin(QString PluginPath);
+
+    bool on_PluginBuild_complete(int exitCode, QProcess::ExitStatus exitStatus);
+
     UnrealInstall SelectedUnrealInstallation;
 
     QList<UnrealInstall> UnrealInstallations;
+
+    // This hack sucks - but it's the only real way to get the output log of the build command to the completion/failure handler
+    QProcess *BuildProcess;
 };
 
 #endif // MAINWINDOW_H
