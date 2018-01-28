@@ -10,11 +10,16 @@
 #include <QJsonArray>
 #include <QSettings>
 
+
+#include <QMimeData>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    setAcceptDrops(true);
 
     UnrealInstallations = GetEngineInstalls();
 
@@ -102,7 +107,7 @@ QList<UnrealInstall> MainWindow::GetEngineInstalls()
             UnrealInstalls.append(UnrealInstall(EngineName, EngineLocation));
 
 #ifdef QT_DEBUG
-            qDebug() << "Found Engine Version: {Name=" << EngineName << ";Locaton=" << EngineLocation << "}";
+            qDebug() << "Found Engine Version: {Name=" << EngineName << ";Location=" << EngineLocation << "}";
 #endif
         }
 
@@ -140,6 +145,40 @@ QList<UnrealInstall> MainWindow::GetEngineInstalls()
 
     // Return the final list of UE4 binary installs & custom installs.
     return UnrealInstalls;
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->urls().length() > 1)
+    {
+        // Too many files dragged - can only accept one at a time!
+        return;
+    }
+    // TODO - Check if it isn't already compiling another plugin (in which case it should reject)
+
+    if (QFileInfo(event->mimeData()->urls().at(0).toLocalFile()).suffix() == "uplugin")
+    {
+        event->acceptProposedAction();
+        //qDebug() << event->mimeData()->urls();
+    }
+    else
+    {
+        qDebug() << "Not Accepting: " << QFileInfo(event->mimeData()->urls().at(0).toLocalFile()).suffix();
+    }
+
+   // if (event->mimeData()->hasFormat("text/plain"))
+   //     event->acceptProposedAction();
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    qDebug() << "Going to build plugin @ " << event->mimeData()->urls().at(0).toLocalFile() << "...";
+    //QFile(event->mimeData()->urls().at(0).toLocalFile()).exists()
+    //textBrowser->setPlainText(event->mimeData()->text());
+    //mimeTypeCombo->clear();
+    //mimeTypeCombo->addItems(event->mimeData()->formats());
+
+    event->acceptProposedAction();
 }
 
 MainWindow::~MainWindow()

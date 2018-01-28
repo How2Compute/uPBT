@@ -3,6 +3,13 @@
 
 #include <QMainWindow>
 #include <QListWidget>
+
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QDragLeaveEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+
 #include "unrealinstall.h"
 
 namespace Ui {
@@ -17,7 +24,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    dropEvent(QDropEvent* event);
+protected:
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
 
 private:
     Ui::MainWindow *ui;
