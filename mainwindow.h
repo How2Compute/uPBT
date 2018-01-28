@@ -28,6 +28,9 @@ protected:
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
 
+private slots:
+    void on_EngineVersionSelector_currentIndexChanged(int index);
+
 private:
     Ui::MainWindow *ui;
 

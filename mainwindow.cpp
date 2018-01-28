@@ -179,6 +179,16 @@ void MainWindow::dropEvent(QDropEvent *event)
     //mimeTypeCombo->addItems(event->mimeData()->formats());
 
     event->acceptProposedAction();
+void MainWindow::on_EngineVersionSelector_currentIndexChanged(int index)
+{
+    // Use the list's index we got when we where adding these to get the right engine version
+    UnrealInstall UnrealInstallation = UnrealInstallations[ui->EngineVersionSelector->itemData(index).toInt()];
+
+    SelectedUnrealInstallation = UnrealInstallation;
+
+#ifdef QT_DEBUG
+    qDebug() << "Unreal Version Switched To {Name=" << UnrealInstallation.GetName() << ";Path=" << UnrealInstallation.GetPath() << "}";
+#endif
 }
 
 MainWindow::~MainWindow()
