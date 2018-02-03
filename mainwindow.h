@@ -33,6 +33,11 @@ protected:
 private slots:
     void on_EngineVersionSelector_currentIndexChanged(int index);
 
+    void on_actionAdd_Unreal_Engine_Install_triggered();
+
+    void on_actionRemove_Unreal_Engine_Install_triggered();
+
+
 private:
     Ui::MainWindow *ui;
 
