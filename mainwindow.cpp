@@ -432,10 +432,31 @@ void MainWindow::on_actionRemove_Unreal_Engine_Install_triggered()
 
     // Get all of the engines' names.
     QStringList items;
-    for (UnrealInstall Installation : UnrealInstallations)
+
+    QSettings Settings("HowToCompute", "uPBT");
+    // Read the custom installs array as the user isn't allowed to remove the launcher/default installs, only the custom ones.
+    int size = Settings.beginReadArray("CustomUnrealEngineInstalls");
+    for (int i = 0; i < size; ++i) {
+        // Get this element out of the settings
+        Settings.setArrayIndex(i);
+
+        // Extract the installation's name, and add it to the array of options of engines to remove.
+        /// NOTE: Adding by "name" may not be the best option, but we'll assume no name duplicates exist so we can use an easy/built in dialog/system.
+       items << Settings.value("Name").toString();
+
+    }
+    Settings.endArray();
+
+    if (items.size() <= 0)
     {
-        // Though adding them by name may not be the absolute best option out there - it would save having to create a new dialog just for this purpose.
-        items.append(Installation.GetName());
+        // There weren't any custom engine installs!
+        QMessageBox ErrorPrompt;
+        ErrorPrompt.setWindowTitle("Uh Oh!");
+        ErrorPrompt.setText("You don't have any custom engine installs! You'll need to add one before you can remove one.");
+        ErrorPrompt.setStandardButtons(QMessageBox::Ok);
+        ErrorPrompt.exec();
+
+        return;
     }
 
     // Create a combobox dialog that allows the user to select which version to remove.
@@ -455,14 +476,12 @@ void MainWindow::on_actionRemove_Unreal_Engine_Install_triggered()
 #endif
         }
 
-        // TODO: Make the user only be able to select the custom installs (AKA read the settings)
-
         // Otherwise simply remove the engine version from the configuration & currently loaded engine versions, and return out.
         for (UnrealInstall Installation : UnrealInstallations)
         {
             if (Installation.GetName() == SelectedEngineName)
             {
-                QSettings Settings("HowToCompute", "uPIT");
+                QSettings Settings("HowToCompute", "uPBT");
 
                 QList<UnrealInstall> ConfigurationInstalls;
 
@@ -491,22 +510,35 @@ void MainWindow::on_actionRemove_Unreal_Engine_Install_triggered()
 
                 // And rewrite the updated array that ommits the removed engine version
                 Settings.beginWriteArray("CustomUnrealEngineInstalls");
+                int index = 0;
                 for (UnrealInstall SInstallation : ConfigurationInstalls)
                 {
+                    Settings.setArrayIndex(index);
                     Settings.setValue("Name", SInstallation.GetName());
                     Settings.setValue("Path", SInstallation.GetPath());
+                    index++;
                 }
                 Settings.endArray();
 
-                // Remove the install from the currently enabled list, and refresh the installs by reloading them. (or removing them - TBD this needs to be implemented)
+                // Remove the install from the currently enabled list, and refresh the installs by reloading them.
                 UnrealInstallations.removeOne(Installation);
-                // TODO ui->EngineVersionSelector->removeItem(ui->EngineVersionSelector->chi);
+
+                // Clear the version selector & regererate it based on the new unreal installations. (AKA reload the list)
+                ui->EngineVersionSelector->clear();
+
+                int i = 0;
+                for (UnrealInstall EngineInstall : UnrealInstallations)
+                {
+                    ui->EngineVersionSelector->addItem(EngineInstall.GetName(), QVariant(i));
+
+                    i++;
+                }
             }
         }
     }
     else
     {
-        // TODO - error occured
+       // The user cancelled/closed the dialog, so don't do anything.
     }
 }
 
