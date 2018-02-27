@@ -313,7 +313,6 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
         // Too many files dragged - can only accept one at a time!
         return;
     }
-    // TODO - Check if it isn't already compiling another plugin (in which case it should reject)
 
     if (QFileInfo(event->mimeData()->urls().at(0).toLocalFile()).suffix() == "uplugin")
     {
@@ -324,9 +323,6 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
     {
         qDebug() << "Not Accepting: " << QFileInfo(event->mimeData()->urls().at(0).toLocalFile()).suffix();
     }
-
-   // if (event->mimeData()->hasFormat("text/plain"))
-   //     event->acceptProposedAction();
 }
 
 void MainWindow::dropEvent(QDropEvent *event)
@@ -335,8 +331,7 @@ void MainWindow::dropEvent(QDropEvent *event)
 
     if (bIsBuilding)
     {
-        // There is still a build process going on - can't build!
-        // TODO a handler/dialog to tell the user about this.
+        // There is still a build process going on - can't build! (don't show a popup as that'd only be annoying)
     }
     else
     {
